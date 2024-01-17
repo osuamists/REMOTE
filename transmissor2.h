@@ -5,7 +5,6 @@
 #define IR_SEND_PIN         3
 
 void setup() {
-    pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(115200);
     IrSender.begin();
 }
