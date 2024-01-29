@@ -1,36 +1,41 @@
-#include <IRLibRecvPCI.h>
+#define maxLen 800
+#define rxPinIR 2 //pin D2 or D3 on standard arduinos. (other pins may be available on More mordern modules like MEga2560, DUE, ESP8266, ESP32)
 
-IRrecvPCI myReceiver(2);
 
-void setup () {
-  Serial.begin(9600);
-  myReceiver.enableIRIn();
-  Serial.println("Preparado para receber sinais!");
-  
+volatile  unsigned int irBuffer[maxLen]; //stores timings - volatile because changed by ISR
+volatile unsigned int x = 0; //Pointer thru irBuffer - volatile because changed by ISR
+
+void setup() {
+  Serial.begin(115200); //change BAUD rate as required
+  attachInterrupt(digitalPinToInterrupt(rxPinIR), rxIR_Interrupt_Handler, CHANGE);//set up ISR for receiving IR signal
 }
 
-void loop () {
-  if (myReceiver.getResults()) {
-    Serial.println(" \n\n-------------------");
-    Serial.println("Sinal recebido");
+void loop() {
+  // put your main code here, to run repeatedly:
 
-    Serial.println(F("\n#define RAW_DATA_LEN"));
-    Serial.println(recvGlobal.recvLength, DEC);
-
-    Serial.println(F("uint16_t rawData[RAW_DATA_LEN]={\n"));
-    for (bufIndex_t i = 1; i < recvGlobal.recvLength; i++ ) {
-      Serial.println(recvGlobal.recvBuffer[i], DEC);
-      Serial.println(F(","));
-
-      if (( i % 8 ) == 0) {
-        Serial.print(F("\n"));
-      }
-      
+  Serial.println(F("Press the button on the remote now - once only"));
+  delay(5000); // pause 5 secs
+  if (x) { //if a signal is captured
+    Serial.println();
+    Serial.print(F("Raw: (")); //dump raw header format - for library
+    Serial.print((x - 1));
+    Serial.print(F(") "));
+    detachInterrupt(digitalPinToInterrupt(rxPinIR));//stop interrupts & capture until finshed here
+    for (int i = 1; i < x; i++) { //now dump the times
+      if (!(i & 0x1)) Serial.print(F("-"));
+      Serial.print(irBuffer[i] - irBuffer[i - 1]);
+      Serial.print(F(", "));
     }
-
-    Serial.println(F("1000};"));
-    Serial.println("-------------------");
-
-    myReceiver.enableIRIn();
+    x = 0;
+    Serial.println();
+    Serial.println();
+    attachInterrupt(digitalPinToInterrupt(rxPinIR), rxIR_Interrupt_Handler, CHANGE);//re-enable ISR for receiving IR signal
   }
+
+}
+
+void rxIR_Interrupt_Handler() {
+  if (x > maxLen) return; //ignore if irBuffer is already full
+  irBuffer[x++] = micros(); //just continually record the time-stamp of signal transitions
+
 }
