@@ -2,7 +2,7 @@
 #include <IRremoteESP8266.h>
 #include <IRsend.h>
 
-const uint16_t IrPin = 17; // ESP32 GPIO pin to use. Recommended: (D4).
+const uint16_t IrPin = 12; // ESP32 GPIO pin to use. Recommended: (D4).
 
 IRsend irsend(IrPin);  // Set the GPIO to be used to sending the message.
 
